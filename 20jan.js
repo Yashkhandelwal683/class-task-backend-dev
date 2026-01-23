@@ -55,4 +55,100 @@
 // readStream.pipe(writeStream);
 
 
+// const fspromises=require("fs").promises;
+
+// async function copyFileAsync( ){
+//     try{
+//         const data=await fspromises.readFile("./sample.txt");
+//         await fspromises.writeFile("./output.txt",data);
+//         console.log("✅ File copied successfully using async/await");
+//     } catch (error) {
+//         console.error("❌ Error copying file:", error.message);
+//     }
+// }
+
+
+// Task 3 : Directory Backup & Cleanup Utility Scenario
+// Your system stores user uploads. You must:
+// Backup important files
+// Delete old unused files automatically
+// Tasks
+// Create a Node.js utility that:Scans a directoryCopies files to a backup folder with timestampDeletes files older than 7 daysLogs all operations into backup.log
+
+// Constraints
+// Use fs.stat
+// Handle missing directories safely
+// Use promises / async-await
+
+
+
+const fs=require("fs");
+const path=require("path");
+
+const sourceDir="./uploads";
+const backupDir="./backup";
+const logFilePath="./backup.log";
+
+if(!fs.existsSync(backupDir)){
+    fs.mkdirSync(backupDir,{recursive:true});
+    console.log("📁 Backup directory created");
+}
+
+function logOperation(message){
+    const timestamp=new Date().toISOString();
+    const logMessage=`[${timestamp}] ${message}\n`;
+    fs.appendFile(logFilePath,logMessage,(err)=>{
+        if(err){
+            console.error("❌ Error logging operation:",err.message);
+        }
+    });
+}
+
+function backupAndCleanup(){
+    fs.readdir(sourceDir,(err,files)=>{
+        if(err){
+            console.error("❌ Error reading source directory:",err.message);
+            return;
+        }
+
+        files.forEach((file)=>{
+            const srcPath=path.join(sourceDir,file);
+            const backupPath=path.join(backupDir,`${Date.now()}_${file}`);
+
+            fs.stat(srcPath,(err,stats)=>{
+                if(err){
+                    console.error("❌ Error accessing source file:",err.message);
+                    return;
+                }
+
+                // Backup file
+                fs.copyFile(srcPath,backupPath,(err)=>{
+                    if(err){
+                        console.error(`❌ Error backing up ${file}:`,err.message);
+                    } else {
+                        console.log(`✅ Backed up: ${file}`);
+                        logOperation(`Backed up: ${file}`);
+                    }
+                });
+
+                // Delete files older than 7 days
+                const sevenDaysInMs=7*24*60*60*1000;
+                if(Date.now()-stats.mtimeMs>sevenDaysInMs){
+                    fs.unlink(srcPath,(err)=>{
+                        if(err){
+                            console.error(`❌ Error deleting ${file}:`,err.message);
+                        } else {
+                            console.log(`🗑️ Deleted old file: ${file}`);
+                            logOperation(`Deleted old file: ${file}`);
+                        }
+                    });
+                }
+            });
+        });
+    });
+}
+
+backupAndCleanup();
+
+
 
