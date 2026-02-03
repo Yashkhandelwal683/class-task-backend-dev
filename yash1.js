@@ -2,22 +2,110 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-app.get('/attendance', (req, res) => {
+// ⭐ VERY IMPORTANT MIDDLEWARE
+app.use(express.json());
 
-    const name = req.query.name || 'Unknown';
-    const date = req.query.date || 'Unknown';
 
-    if (!req.query.name || !req.query.date) {
-        return res.send('Please provide name and date query parameters');
+// Dummy Database
+const students = [
+    {
+        name: "Yash",
+        id: 1,
+        attendance: [
+            { date: "2024-10-01", present: true },
+            { date: "2024-10-02", present: false }
+        ]
+    },
+    {
+        name: "Amit",
+        id: 2,
+        attendance: [
+            { date: "2024-10-01", present: true },
+            { date: "2024-10-02", present: true }
+        ]
+    },
+    {
+        name: "Ravi",
+        id: 3,
+        attendance: [
+            { date: "2024-10-01", present: true },
+            { date: "2024-10-02", present: true }
+        ]
     }
+];
 
-    if (req.query.present === 'yes') {
-        return res.send(`Attendance recorded for ${name} on ${date}`);
-    }
 
-    return res.send(`Attendance NOT recorded for ${name} on ${date}`);
+// ✅ HOME ROUTE (Check server)
+app.get("/", (req, res) => {
+    res.send("Attendance API Running ✅");
 });
 
+
+// ✅ GET ALL STUDENTS
+app.get("/students", (req, res) => {
+    res.json(students);
+});
+
+
+// ✅ GET STUDENT BY ID
+app.get("/students/:id", (req, res) => {
+
+    const studentId = parseInt(req.params.id);
+
+    const student = students.find(s => s.id === studentId);
+
+    if (!student) {
+        return res.status(404).send("Student not found ❌");
+    }
+
+    res.json(student);
+});
+
+
+// ✅ ADD ATTENDANCE
+app.post("/students/:id/attendance", (req, res) => {
+
+    const studentId = parseInt(req.params.id);
+    const { date, present } = req.body || {};
+
+    if (!date || present === undefined) {
+        return res.status(400).send("Provide date and present status");
+    }
+
+    const student = students.find(s => s.id === studentId);
+
+    if (!student) {
+        return res.status(404).send("Student not found ❌");
+    }
+
+    student.attendance.push({
+        date,
+        present
+    });
+
+    res.send("Attendance added successfully ✅");
+});
+
+
+// ✅ DELETE ATTENDANCE (ADVANCED 🔥)
+app.delete("/students/:id/attendance/:date", (req, res) => {
+
+    const studentId = parseInt(req.params.id);
+    const date = req.params.date;
+
+    const student = students.find(s => s.id === studentId);
+
+    if (!student) {
+        return res.status(404).send("Student not found");
+    }
+
+    student.attendance = student.attendance.filter(a => a.date !== date);
+
+    res.send("Attendance deleted ✅");
+});
+
+
+// ✅ SERVER
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+    console.log(`Server running on http://localhost:${port}`);
 });
